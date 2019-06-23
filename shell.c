@@ -6,6 +6,10 @@
 
 #define LSH_RL_BUFSIZE 1024
 
+#define LSH_TOK_BUFSIZE 64
+#define LSH_TOK_DELIM " \t\r\n\a"
+
+
 char *lsh_read_line(void){
     int bufsize = LSH_RL_BUFSIZE;
     int position = 0;
@@ -42,6 +46,45 @@ char *lsh_read_line(void){
     }
 }
 
+
+// updated version of line read function
+// char *lsh_read_line(void){
+//     char *line = NULL;
+//     ssize_t bufsize = 0; //have getline allocate a buffer for us
+//     getline(&line, &bufsize, stdin);
+//     return line;
+// }
+
+char **lsh_split_line(char *line){
+    int bufsize = LSH_TOK_BUFSIZE, position = 0;
+    char **tokens = malloc(bufsize * sizeof(char*));
+    char *token;
+
+    if(!tokens){
+        fprintf(stderr, "lsh: allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+
+    token = strtok(line, LSH_TOK_DELIM);
+    while(token != NULL) {
+        tokens[position] = token;
+        position++;
+
+        if(position >= bufsize) {
+            bufsize += LSH_TOK_BUFSIZE;
+            tokens = realloc(tokens, bufsize * sizeof(char*));
+            if( !tokens) {
+                fprintf(stderr, "lsh: allocation error\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        token = strtok(NULL, LSH_TOK_DELIM);
+    }
+    tokens[position] = NULL;
+    return tokens;
+}
+
 void lsh_loop(void){
     char *line;
     char **args;
@@ -56,6 +99,18 @@ void lsh_loop(void){
         free(line);
         free(args);
     }while(status);
+}
+
+int lsh_launch(char **args) {
+    pid_t pid, wpid;
+    int status;
+
+    pid = fork();
+    if(pid ==0) {
+        if(execvp(args[0], args) == -1) {
+            perro("lsh");
+        }
+    }
 }
 
 
