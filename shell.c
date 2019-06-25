@@ -97,7 +97,7 @@ void lsh_loop(void){
         status = lsh_execute(args);
 
         free(line);
-        free(args);
+        free(args); 
     }while(status);
 }
 
@@ -107,10 +107,22 @@ int lsh_launch(char **args) {
 
     pid = fork();
     if(pid ==0) {
-        if(execvp(args[0], args) == -1) {
-            perro("lsh");
+        //child procss
+        if(execvp(args[0], args) == -1) {  //execvp is a type exec system call
+            perror("lsh");
         }
+        exit(EXIT_FAILURE);
+    } else if(pid<0){
+        // error forking
+        perror("lsh");
+    } else {
+        // Parent Process
+        do {
+            wpid = waitpid(pid, &status, WUNTRACED);
+        } while(!WIFEXITED(status) && !WIFSIGNALED(status));
     }
+
+    return 1;
 }
 
 
